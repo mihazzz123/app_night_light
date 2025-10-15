@@ -1,4 +1,4 @@
-import '../storage/token_storage.dart';
+import '../core/utils/token_storage.dart';
 
 class AuthService {
   // Заглушка: проверка токена
