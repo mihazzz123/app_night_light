@@ -4,7 +4,7 @@ class AuthService {
   // Заглушка: проверка токена
   Future<bool> checkToken() async {
     final token = await TokenStorage.getToken();
-    // Эмулируем проверку токена: если он есть — считаем валидным
+    print('Проверка токена: $token');
     return token != null && token.isNotEmpty;
   }
 

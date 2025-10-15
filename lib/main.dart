@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'screens/auth_gate.dart';
+import 'theme/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -13,7 +14,9 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Авторизация',
-      theme: ThemeData(primarySwatch: Colors.blue),1
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      themeMode: ThemeMode.system,
       home: const AuthGate(),
     );
   }
