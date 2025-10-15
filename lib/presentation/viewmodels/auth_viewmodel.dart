@@ -1,43 +1,73 @@
+// presentation/viewmodels/auth_viewmodel.dart
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../domain/usecases/check_auth_status.dart';
 import '../../domain/entities/auth_state.dart';
-import '../../domain/repositories/auth_repository.dart';
 import '../../domain/entities/user_entity.dart';
+import '../../domain/usecases/check_auth_status.dart';
+import '../../domain/usecases/login_user.dart';
+import '../../domain/usecases/register_user.dart';
 
-class AuthViewModel extends StateNotifier<AsyncValue<AuthState>> {
-  final CheckAuthStatus checkAuthStatus;
+class AuthViewModel extends StateNotifier<AuthState> {
+  final CheckAuthStatus _checkAuthStatus;
+  final LoginUser _loginUser;
+  final RegisterUser _registerUser;
 
-  AuthViewModel(this.checkAuthStatus) : super(const AsyncValue.loading()) {
-    _init();
+  AuthViewModel(this._checkAuthStatus, this._loginUser, this._registerUser)
+    : super(AuthState.initial()) {
+    checkAuthStatus();
   }
 
-  Future<void> _init() async {
-    final result = await checkAuthStatus();
-    state = AsyncValue.data(result);
-  }
-}
-
-final authViewModelProvider =
-    StateNotifierProvider<AuthViewModel, AsyncValue<AuthState>>((ref) {
-      // Временно заглушка, пока не подключён DI
-      final usecase = CheckAuthStatus(FakeAuthRepository());
-      return AuthViewModel(usecase);
-    });
-
-// Временная реализация для запуска
-class FakeAuthRepository implements AuthRepository {
-  @override
-  Future<AuthState> checkAuthStatus() async {
-    return AuthState(isAuthorized: false);
+  Future<void> checkAuthStatus() async {
+    state = AuthState.loading();
+    try {
+      final user = await _checkAuthStatus();
+      if (user != null) {
+        state = AuthState.authenticated(user);
+      } else {
+        state = AuthState.unauthenticated();
+      }
+    } catch (e) {
+      state = AuthState.error(e.toString());
+    }
   }
 
-  @override
-  Future<UserEntity> login(String email, String password) async {
-    return UserEntity(id: '1', email: email);
+  Future<void> login(String email, String password) async {
+    state = AuthState.loading();
+    try {
+      final user = await _loginUser(email, password);
+      if (user != null) {
+        state = AuthState.authenticated(user);
+      } else {
+        state = AuthState.error('Ошибка авторизации');
+      }
+    } catch (e) {
+      state = AuthState.error(e.toString());
+    }
   }
 
-  @override
-  Future<UserEntity> register(String email, String password) async {
-    return UserEntity(id: '2', email: email);
+  Future<void> register({
+    required String email,
+    required String password,
+    required String name,
+  }) async {
+    state = AuthState.loading();
+    try {
+      final user = await _registerUser(
+        email: email,
+        password: password,
+        name: name,
+      );
+      if (user != null) {
+        state = AuthState.authenticated(user);
+      } else {
+        state = AuthState.error('Ошибка регистрации');
+      }
+    } catch (e) {
+      state = AuthState.error(e.toString());
+    }
+  }
+
+  void logout() {
+    state = AuthState.unauthenticated();
+    // Здесь можно добавить вызов logout из репозитория
   }
 }

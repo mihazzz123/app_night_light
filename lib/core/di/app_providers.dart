@@ -1,45 +1,46 @@
-import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/datasources/remote_data_source.dart';
 import '../../data/repositories/auth_repository_impl.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../domain/usecases/check_auth_status.dart';
 import '../../domain/entities/auth_state.dart';
-import '../../presentation/viewmodels/auth_viewmodel.dart';
 import '../../domain/usecases/login_user.dart';
 import '../../domain/usecases/register_user.dart';
+import '../../presentation/viewmodels/auth_viewmodel.dart';
+import '../../data/datasources/remote_data_source_impl.dart';
 
-final dioProvider = Provider(
-  (ref) => Dio(BaseOptions(baseUrl: 'https://api.m3zold-lab.tech')),
-);
-
-final remoteDataSourceProvider = Provider((ref) {
-  final dio = ref.watch(dioProvider);
-  return RemoteDataSource(dio);
+// DataSources
+final remoteDataSourceProvider = Provider<RemoteDataSource>((ref) {
+  return RemoteDataSourceImpl();
 });
 
+// Repositories
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
-  final remote = ref.watch(remoteDataSourceProvider);
-  return AuthRepositoryImpl(remote);
+  final remoteDataSource = ref.read(remoteDataSourceProvider);
+  return AuthRepositoryImpl(remoteDataSource);
 });
 
-final checkAuthStatusProvider = Provider((ref) {
-  final repo = ref.watch(authRepositoryProvider);
-  return CheckAuthStatus(repo);
-});
-
-final authViewModelProvider =
-    StateNotifierProvider<AuthViewModel, AsyncValue<AuthState>>((ref) {
-      final usecase = ref.watch(checkAuthStatusProvider);
-      return AuthViewModel(usecase);
-    });
-
+// UseCases
 final loginUserProvider = Provider<LoginUser>((ref) {
-  final repo = ref.watch(authRepositoryProvider);
-  return LoginUser(repo);
+  final authRepository = ref.read(authRepositoryProvider);
+  return LoginUser(authRepository);
 });
 
 final registerUserProvider = Provider<RegisterUser>((ref) {
-  final repo = ref.watch(authRepositoryProvider);
-  return RegisterUser(repo);
+  final authRepository = ref.read(authRepositoryProvider);
+  return RegisterUser(authRepository);
 });
+
+final checkAuthStatusProvider = Provider<CheckAuthStatus>((ref) {
+  final authRepository = ref.read(authRepositoryProvider);
+  return CheckAuthStatus(authRepository);
+});
+
+// ViewModels
+final authViewModelProvider = StateNotifierProvider<AuthViewModel, AuthState>(
+  (ref) => AuthViewModel(
+    ref.read(checkAuthStatusProvider),
+    ref.read(loginUserProvider),
+    ref.read(registerUserProvider),
+  ),
+);

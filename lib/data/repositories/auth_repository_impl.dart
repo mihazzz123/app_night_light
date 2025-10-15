@@ -1,36 +1,37 @@
-import '../datasources/remote_data_source.dart';
 import '../../domain/entities/user_entity.dart';
-import '../../domain/entities/auth_state.dart';
-import '../../core/utils/token_storage.dart';
 import '../../domain/repositories/auth_repository.dart';
+import '../datasources/remote_data_source.dart';
+import '../models/user_model.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
-  final RemoteDataSource remote;
+  final RemoteDataSource remoteDataSource;
 
-  AuthRepositoryImpl(this.remote);
+  AuthRepositoryImpl(this.remoteDataSource);
 
   @override
-  Future<UserEntity> login(String email, String password) async {
-    final model = await remote.login(email, password);
-    return UserEntity(id: model.id, email: model.email);
+  Future<UserEntity?> login(String email, String password) async {
+    final userModel = await remoteDataSource.login(email, password);
+    return userModel?.toEntity();
   }
 
   @override
-  Future<AuthState> checkAuthStatus() async {
-    // Проверка токена из хранилища
-    final token = await TokenStorage.getToken();
-    if (token == null) return AuthState(isAuthorized: false);
-
-    // TODO: проверить токен на сервере
-    return AuthState(
-      isAuthorized: true,
-      user: UserEntity(id: '123', email: 'test@example.com'),
-    );
+  Future<UserEntity?> register(
+    String email,
+    String password,
+    String name,
+  ) async {
+    final userModel = await remoteDataSource.register(email, password, name);
+    return userModel?.toEntity();
   }
 
   @override
-  Future<UserEntity> register(String email, String password) async {
-    final model = await remote.register(email, password);
-    return UserEntity(id: model.id, email: model.email);
+  Future<bool> logout() async {
+    return await remoteDataSource.logout();
+  }
+
+  @override
+  Future<UserEntity?> checkAuthStatus() async {
+    final userModel = await remoteDataSource.checkAuthStatus();
+    return userModel?.toEntity();
   }
 }

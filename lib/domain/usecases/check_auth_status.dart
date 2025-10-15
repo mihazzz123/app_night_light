@@ -1,4 +1,4 @@
-import '../entities/auth_state.dart';
+import 'package:app_night_light/domain/entities/user_entity.dart';
 import '../repositories/auth_repository.dart';
 
 class CheckAuthStatus {
@@ -6,5 +6,5 @@ class CheckAuthStatus {
 
   CheckAuthStatus(this.repository);
 
-  Future<AuthState> call() => repository.checkAuthStatus();
+  Future<UserEntity?> call() => repository.checkAuthStatus();
 }

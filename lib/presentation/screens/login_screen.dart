@@ -15,13 +15,31 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final passwordController = TextEditingController();
 
   Future<void> _login() async {
-    final loginUser = ref.read(loginUserProvider);
-    final user = await loginUser(emailController.text, passwordController.text);
+    final email = emailController.text.trim();
+    final password = passwordController.text.trim();
 
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => HomeScreen(user: user)),
-    );
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Пожалуйста, заполните все поля')));
+      return;
+    }
+
+    final authViewModel = ref.read(authViewModelProvider.notifier);
+    await authViewModel.login(email, password);
+
+    // Проверяем результат через провайдер
+    final authState = ref.read(authViewModelProvider);
+    if (authState.isAuthorized && authState.user != null) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => HomeScreen(user: authState.user!)),
+      );
+    } else if (authState.error != null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(authState.error!)));
+    }
   }
 
   @override

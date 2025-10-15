@@ -7,7 +7,15 @@ class AppTheme {
     brightness: Brightness.light,
     colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
     scaffoldBackgroundColor: Colors.white,
-    textTheme: AppTextTheme.light,
+    fontFamily: 'Roboto',
+    textTheme: TextTheme(
+      bodyMedium: const TextStyle(
+        fontSize: 16.0,
+        color: Colors.black87,
+        height: 1.5,
+        fontWeight: FontWeight.w400,
+      ),
+    ),
   );
 
   static final dark = ThemeData(
@@ -18,6 +26,5 @@ class AppTheme {
       brightness: Brightness.dark,
     ),
     scaffoldBackgroundColor: Colors.black,
-    textTheme: AppTextTheme.dark,
   );
 }

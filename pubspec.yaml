@@ -6,6 +6,9 @@ version: 1.0.0+1
 environment:
   sdk: ^3.9.2
 
+assets:
+  - assets/images/
+
 dependencies:
   flutter:
     sdk: flutter
@@ -14,6 +17,7 @@ dependencies:
   flutter_riverpod: ^2.4.0
   dio: ^5.4.0
   crypto: ^3.0.3
+  firebase_auth: ^6.1.1
 
 dev_dependencies:
   flutter_test:
