@@ -1,7 +1,7 @@
 // presentation/screens/splash_router.dart
+import 'package:app_night_light/presentation/screens/login_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'auth_screen.dart';
 import 'home_screen.dart';
 import '../../core/di/app_providers.dart';
 
@@ -35,6 +35,6 @@ class SplashRouter extends ConsumerWidget {
 
     return authState.isAuthorized && authState.user != null
         ? HomeScreen(user: authState.user!)
-        : AuthScreen();
+        : LoginScreen();
   }
 }

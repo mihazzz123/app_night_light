@@ -14,7 +14,7 @@ class HomeScreen extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('Добро пожаловать, ${user.name}!'),
+            Text('Добро пожаловать, ${user.userName}!'),
             Text('Email: ${user.email}'),
           ],
         ),

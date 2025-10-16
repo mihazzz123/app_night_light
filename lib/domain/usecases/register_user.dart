@@ -9,8 +9,8 @@ class RegisterUser {
   Future<UserEntity?> call({
     required String email,
     required String password,
-    required String name,
+    required String confirmPassword,
   }) async {
-    return await repository.register(email, password, name);
+    return await repository.register(email, password, confirmPassword);
   }
 }

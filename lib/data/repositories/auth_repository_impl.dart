@@ -1,7 +1,7 @@
+// data/repositories/auth_repository_impl.dart
 import '../../domain/entities/user_entity.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../datasources/remote_data_source.dart';
-import '../models/user_model.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
   final RemoteDataSource remoteDataSource;
@@ -18,9 +18,13 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<UserEntity?> register(
     String email,
     String password,
-    String name,
+    String confirmPassword,
   ) async {
-    final userModel = await remoteDataSource.register(email, password, name);
+    final userModel = await remoteDataSource.register(
+      email,
+      password,
+      confirmPassword,
+    );
     return userModel?.toEntity();
   }
 

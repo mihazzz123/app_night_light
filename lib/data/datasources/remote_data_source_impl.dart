@@ -1,75 +1,139 @@
 // data/datasources/remote_data_source_impl.dart
+import 'dart:async';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'remote_data_source.dart';
 import '../models/user_model.dart';
+import '../models/register_request_model.dart';
+import '../models/register_response_model.dart';
 
 class RemoteDataSourceImpl implements RemoteDataSource {
-  // Временная реализация для тестирования
-  final Map<String, String> _mockUsers = {'test@test.com': 'password123'};
+  static const String _baseUrl = 'https://api.m3zold-lab.tech';
 
-  final Map<String, UserModel> _userData = {
-    'test@test.com': UserModel(
-      id: '1',
-      email: 'test@test.com',
-      name: 'Test User',
-    ),
-  };
+  final http.Client client;
+
+  RemoteDataSourceImpl({required this.client});
 
   @override
   Future<UserModel?> login(String email, String password) async {
-    // Имитация задержки сети
-    await Future.delayed(Duration(seconds: 1));
+    try {
+      final url = Uri.parse('$_baseUrl/auth/login');
 
-    if (_mockUsers[email] == password) {
-      return _userData[email];
+      final response = await client
+          .post(
+            url,
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            body: jsonEncode({'email': email, 'password': password}),
+          )
+          .timeout(Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        return UserModel.fromJson(responseData);
+      } else if (response.statusCode == 401) {
+        throw Exception('Неверный email или пароль');
+      } else {
+        throw Exception('Ошибка авторизации: ${response.statusCode}');
+      }
+    } on http.ClientException catch (e) {
+      throw Exception('Ошибка сети: $e');
+    } on FormatException catch (e) {
+      throw Exception('Ошибка формата данных: $e');
+    } on TimeoutException catch (e) {
+      throw Exception('Таймаут соединения: $e');
+    } catch (e) {
+      throw Exception('Неизвестная ошибка: $e');
     }
-    return null;
   }
 
   @override
   Future<UserModel?> register(
     String email,
     String password,
-    String name,
+    String confirmPassword,
   ) async {
-    // Имитация задержки сети
-    await Future.delayed(Duration(seconds: 1));
-
-    // Проверяем, нет ли уже пользователя с таким email
-    if (_mockUsers.containsKey(email)) {
-      throw Exception('Пользователь с таким email уже существует');
-    }
-
-    // Создаем нового пользователя
-    final newUser = UserModel(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+    final request = RegisterRequestModel(
       email: email,
-      name: name,
+      password: password,
+      confirmPassword: confirmPassword,
+      userName: email.split('@').first, // Генерируем userName из email
     );
 
-    // Сохраняем в "базу данных"
-    _mockUsers[email] = password;
-    _userData[email] = newUser;
+    final response = await registerWithApi(request);
 
-    return newUser;
+    if (response != null) {
+      return UserModel(
+        id: response.id,
+        email: response.email,
+        userName: response.userName,
+        firstName: response.firstName,
+        lastName: response.lastName,
+        isActive: response.isActive,
+        createdAt: response.createdAt,
+        updatedAt: response.updatedAt,
+      );
+    }
+
+    return null;
+  }
+
+  @override
+  Future<RegisterResponseModel?> registerWithApi(
+    RegisterRequestModel request,
+  ) async {
+    try {
+      final url = Uri.parse('$_baseUrl/auth/register');
+
+      final response = await client
+          .post(
+            url,
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            body: jsonEncode(request.toJson()),
+          )
+          .timeout(Duration(seconds: 10));
+
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        return RegisterResponseModel.fromJson(responseData);
+      } else if (response.statusCode == 400) {
+        final errorData = jsonDecode(response.body);
+        throw Exception(errorData['message'] ?? 'Ошибка регистрации');
+      } else if (response.statusCode == 409) {
+        throw Exception('Пользователь с таким email уже существует');
+      } else {
+        final errorData = jsonDecode(response.body);
+        throw Exception(
+          errorData['message'] ?? 'Ошибка сервера: ${response.statusCode}',
+        );
+      }
+    } on http.ClientException catch (e) {
+      throw Exception('Ошибка сети: $e');
+    } on FormatException catch (e) {
+      throw Exception('Ошибка формата данных: $e');
+    } on TimeoutException catch (e) {
+      throw Exception('Таймаут соединения: $e');
+    } catch (e) {
+      throw Exception('Неизвестная ошибка: $e');
+    }
   }
 
   @override
   Future<bool> logout() async {
+    // TODO: Реализовать logout с API
     await Future.delayed(Duration(milliseconds: 500));
     return true;
   }
 
   @override
   Future<UserModel?> checkAuthStatus() async {
-    // Имитация проверки авторизации
-    // В реальном приложении здесь бы проверялся токен
+    // TODO: Реализовать проверку авторизации с API
     await Future.delayed(Duration(seconds: 1));
-
-    // Для тестирования возвращаем null (не авторизован)
-    // Чтобы всегда видеть экран логина
     return null;
-
-    // Если хотите сразу переходить на главный экран, раскомментируйте:
-    // return _userData['test@test.com'];
   }
 }

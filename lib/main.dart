@@ -14,8 +14,9 @@ class MyApp extends StatelessWidget {
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: ThemeMode.system,
-      title: 'M3Zold Auth App',
+      title: 'm3zold-lab',
       home: SplashRouter(),
+      debugShowCheckedModeBanner: false,
     );
   }
 }
