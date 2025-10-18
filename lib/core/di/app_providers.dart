@@ -7,6 +7,7 @@ import '../../data/repositories/auth_repository_impl.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../domain/usecases/check_auth_status.dart';
 import '../../domain/usecases/login_user.dart';
+import '../../domain/usecases/logout_user.dart';
 import '../../domain/usecases/register_user.dart';
 import '../../presentation/viewmodels/auth_viewmodel.dart';
 import '../../domain/entities/auth_state.dart';
@@ -32,6 +33,11 @@ final loginUserProvider = Provider<LoginUser>((ref) {
   return LoginUser(authRepository);
 });
 
+final logoutUserProvider = Provider<LogoutUser>((ref) {
+  final authRepository = ref.read(authRepositoryProvider);
+  return LogoutUser(authRepository);
+});
+
 final registerUserProvider = Provider<RegisterUser>((ref) {
   final authRepository = ref.read(authRepositoryProvider);
   return RegisterUser(authRepository);
@@ -45,8 +51,9 @@ final checkAuthStatusProvider = Provider<CheckAuthStatus>((ref) {
 // ViewModels
 final authViewModelProvider = StateNotifierProvider<AuthViewModel, AuthState>(
   (ref) => AuthViewModel(
-    ref.read(checkAuthStatusProvider),
-    ref.read(loginUserProvider),
-    ref.read(registerUserProvider),
+    checkAuthStatus: ref.read(checkAuthStatusProvider),
+    loginUser: ref.read(loginUserProvider),
+    logoutUser: ref.read(logoutUserProvider),
+    registerUser: ref.read(registerUserProvider),
   ),
 );

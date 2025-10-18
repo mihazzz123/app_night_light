@@ -3,15 +3,25 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/auth_state.dart';
 import '../../domain/usecases/check_auth_status.dart';
 import '../../domain/usecases/login_user.dart';
+import '../../domain/usecases/logout_user.dart';
 import '../../domain/usecases/register_user.dart';
 
 class AuthViewModel extends StateNotifier<AuthState> {
   final CheckAuthStatus _checkAuthStatus;
-  final LoginUser _loginName;
+  final LoginUser _loginUser;
+  final LogoutUser _logoutUser;
   final RegisterUser _registerUser;
 
-  AuthViewModel(this._checkAuthStatus, this._loginName, this._registerUser)
-    : super(AuthState.initial()) {
+  AuthViewModel({
+    required CheckAuthStatus checkAuthStatus,
+    required LoginUser loginUser,
+    required LogoutUser logoutUser,
+    required RegisterUser registerUser,
+  })  : _checkAuthStatus = checkAuthStatus,
+        _loginUser = loginUser,
+        _logoutUser = logoutUser,
+        _registerUser = registerUser,
+        super(AuthState.initial()) {
     checkAuthStatus();
   }
 
@@ -32,7 +42,7 @@ class AuthViewModel extends StateNotifier<AuthState> {
   Future<void> login(String email, String password) async {
     state = AuthState.loading();
     try {
-      final user = await _loginName(email, password);
+      final user = await _loginUser(email, password);
       if (user != null) {
         state = AuthState.authenticated(user);
       } else {
@@ -43,11 +53,8 @@ class AuthViewModel extends StateNotifier<AuthState> {
     }
   }
 
-  Future<void> register({
-    required String email,
-    required String password,
-    required String confirmPassword,
-  }) async {
+  Future<void> register(
+      String email, String password, String confirmPassword) async {
     state = AuthState.loading();
     try {
       final user = await _registerUser(
@@ -65,8 +72,15 @@ class AuthViewModel extends StateNotifier<AuthState> {
     }
   }
 
-  void logout() {
-    state = AuthState.unauthenticated();
-    // Здесь можно добавить вызов logout из репозитория
+  Future<void> logout() async {
+    state = AuthState.loading();
+    try {
+      final res = await _logoutUser();
+      if (res) {
+        state = AuthState.unauthenticated();
+      }
+    } catch (e) {
+      state = AuthState.error(e.toString());
+    }
   }
 }

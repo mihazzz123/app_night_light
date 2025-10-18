@@ -15,7 +15,7 @@ class AuthState {
   });
 
   factory AuthState.initial() {
-    return AuthState(
+    return const AuthState(
       isLoading: true,
       isAuthorized: false,
       user: null,
@@ -24,7 +24,7 @@ class AuthState {
   }
 
   factory AuthState.loading() {
-    return AuthState(
+    return const AuthState(
       isLoading: true,
       isAuthorized: false,
       user: null,
@@ -42,7 +42,7 @@ class AuthState {
   }
 
   factory AuthState.unauthenticated() {
-    return AuthState(
+    return const AuthState(
       isLoading: false,
       isAuthorized: false,
       user: null,
