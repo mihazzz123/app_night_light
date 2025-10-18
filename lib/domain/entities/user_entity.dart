@@ -9,6 +9,8 @@ class UserEntity {
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? deletedAt;
+  final String? accessToken;
+  final String? refreshToken;
 
   UserEntity({
     required this.id,
@@ -20,6 +22,8 @@ class UserEntity {
     required this.createdAt,
     required this.updatedAt,
     this.deletedAt,
+    this.accessToken,
+    this.refreshToken,
   });
 
   String get fullName => '$firstName $lastName';
