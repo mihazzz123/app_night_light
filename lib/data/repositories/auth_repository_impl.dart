@@ -32,10 +32,4 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<bool> logout() async {
     return await remoteDataSource.logout();
   }
-
-  @override
-  Future<UserEntity?> checkAuthStatus() async {
-    final userModel = await remoteDataSource.checkAuthStatus();
-    return userModel?.toEntity();
-  }
 }

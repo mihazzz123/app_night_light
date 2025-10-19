@@ -28,18 +28,18 @@ class RegisterResponseModel {
     return RegisterResponseModel(
       id: json['id']?.toString() ?? '',
       email: json['email']?.toString() ?? '',
-      userName: json['userName']?.toString() ?? '',
-      firstName: json['firstName']?.toString() ?? '',
-      lastName: json['lastName']?.toString() ?? '',
-      isActive: json['isActive'] ?? false,
+      userName: json['user_name']?.toString() ?? '',
+      firstName: json['first_name']?.toString() ?? '',
+      lastName: json['last_name']?.toString() ?? '',
+      isActive: json['is_active'] ?? false,
       createdAt: DateTime.parse(
-        json['createdAt'] ?? DateTime.now().toIso8601String(),
+        json['created_at'] ?? DateTime.now().toIso8601String(),
       ),
       updatedAt: DateTime.parse(
-        json['updatedAt'] ?? DateTime.now().toIso8601String(),
+        json['updated_at'] ?? DateTime.now().toIso8601String(),
       ),
-      accessToken: json['accessToken']?.toString(),
-      refreshToken: json['refreshToken']?.toString(),
+      accessToken: json['access_token']?.toString(),
+      refreshToken: json['refresh_token']?.toString(),
     );
   }
 }

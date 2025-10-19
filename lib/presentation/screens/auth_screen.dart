@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'auth_login_tab.dart';
 import 'auth_register_tab.dart';
-import 'auth_forgot_password_dialog.dart';
 
 class AuthScreen extends ConsumerStatefulWidget {
   const AuthScreen({Key? key}) : super(key: key);
@@ -52,16 +51,24 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
           ],
           indicatorColor: colorScheme.primary,
           labelColor: colorScheme.primary,
-          unselectedLabelColor: colorScheme.onSurface.withOpacity(0.6),
+          unselectedLabelColor: colorScheme.onSurface.withValues(alpha: 60),
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: const [
-          AuthLoginTab(),
-          AuthRegisterTab(),
-        ],
-      ),
+      body: LayoutBuilder(builder: (context, constraints) {
+        double maxWidth =
+            constraints.maxWidth > 800 ? 600 : constraints.maxWidth;
+        return Center(
+          child: SizedBox(
+              width: maxWidth,
+              child: TabBarView(
+                controller: _tabController,
+                children: const [
+                  AuthLoginTab(),
+                  AuthRegisterTab(),
+                ],
+              )),
+        );
+      }),
     );
   }
 }

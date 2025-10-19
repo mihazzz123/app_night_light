@@ -1,9 +1,8 @@
 // presentation/screens/auth_register_tab.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/di/app_providers.dart';
-import '../../core/utils/email_validator.dart';
-import '../../core/utils/password_validator.dart';
+import '../../core/di.dart';
+import '../../core/utils/validators.dart';
 import '../../domain/entities/user_entity.dart';
 import 'home_screen.dart';
 
@@ -60,14 +59,14 @@ class _AuthRegisterTabState extends ConsumerState<AuthRegisterTab> {
     try {
       final authViewModel = ref.read(authViewModelProvider.notifier);
       await authViewModel.register(
-        EmailValidator.normalize(email),
+        Validator.normalizeEmail(email),
         password,
         confirmPassword,
       );
 
       final authState = ref.read(authViewModelProvider);
       if (authState.isAuthorized && authState.user != null) {
-        _navigateToHome(authState.user!);
+        _navigateToLogin(authState.user!);
       } else if (authState.error != null) {
         _showError(authState.error!);
       }
@@ -80,7 +79,7 @@ class _AuthRegisterTabState extends ConsumerState<AuthRegisterTab> {
     }
   }
 
-  void _navigateToHome(UserEntity user) {
+  void _navigateToLogin(UserEntity user) {
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (_) => HomeScreen(user: user)),
@@ -187,7 +186,7 @@ class _AuthRegisterTabState extends ConsumerState<AuthRegisterTab> {
               keyboardType: TextInputType.emailAddress,
               validator: (value) => _validateField(
                 value,
-                EmailValidator.validate,
+                Validator.validateEmail,
                 _emailTouched,
               ),
               textInputAction: TextInputAction.next,
@@ -220,7 +219,7 @@ class _AuthRegisterTabState extends ConsumerState<AuthRegisterTab> {
               obscureText: _obscurePassword,
               validator: (value) => _validateField(
                 value,
-                PasswordValidator.validate,
+                Validator.validatePassword,
                 _passwordTouched,
               ),
               textInputAction: TextInputAction.next,
@@ -253,7 +252,7 @@ class _AuthRegisterTabState extends ConsumerState<AuthRegisterTab> {
               obscureText: _obscureConfirmPassword,
               validator: (value) => _validateField(
                 value,
-                (value) => PasswordValidator.validate(
+                (value) => Validator.validatePassword(
                   value,
                   confirmPassword: registerPasswordController.text,
                 ),

@@ -3,14 +3,33 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'home_screen.dart';
 import 'auth_screen.dart';
-import '../../core/di/app_providers.dart';
+import '../../core/di.dart';
 
-class SplashRouter extends ConsumerWidget {
+class SplashRouter extends ConsumerStatefulWidget {
   const SplashRouter({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SplashRouter> createState() => _SplashRouterState();
+}
+
+class _SplashRouterState extends ConsumerState<SplashRouter> {
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() {
+      ref.read(authViewModelProvider.notifier).checkAuthStatus();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final authState = ref.watch(authViewModelProvider);
+
+    if (authState.isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
 
     if (authState.error != null) {
       return Scaffold(

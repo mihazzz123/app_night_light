@@ -9,5 +9,4 @@ abstract class AuthRepository {
     String confirmPassword,
   );
   Future<bool> logout();
-  Future<UserEntity?> checkAuthStatus();
 }

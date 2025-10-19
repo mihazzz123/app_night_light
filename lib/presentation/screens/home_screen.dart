@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/user_entity.dart';
-import '../../core/di/app_providers.dart';
+import '../../core/di.dart';
 
 class HomeScreen extends ConsumerWidget {
   // Изменено на ConsumerWidget
@@ -193,8 +193,8 @@ class HomeScreen extends ConsumerWidget {
           content: Text(
             'Ошибка при выходе: $e',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(context).colorScheme.onError,
-            ),
+                  color: Theme.of(context).colorScheme.onError,
+                ),
           ),
           backgroundColor: Theme.of(context).colorScheme.error,
           behavior: SnackBarBehavior.floating,

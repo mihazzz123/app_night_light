@@ -1,8 +1,8 @@
 // presentation/screens/auth_login_tab.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/di/app_providers.dart';
-import '../../core/utils/email_validator.dart';
+import '../../core/di.dart';
+import '../../core/utils/validators.dart';
 import '../../domain/entities/user_entity.dart';
 import 'home_screen.dart';
 import 'auth_forgot_password_dialog.dart';
@@ -46,7 +46,7 @@ class _AuthLoginTabState extends ConsumerState<AuthLoginTab> {
     try {
       final authViewModel = ref.read(authViewModelProvider.notifier);
       await authViewModel.login(
-        EmailValidator.normalize(loginEmailController.text.trim()),
+        Validator.normalizeEmail(loginEmailController.text.trim()),
         loginPasswordController.text.trim(),
       );
 
@@ -156,7 +156,7 @@ class _AuthLoginTabState extends ConsumerState<AuthLoginTab> {
             Text(
               'Войдите в свой аккаунт',
               style: textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurface.withOpacity(0.6),
+                color: colorScheme.onSurface.withValues(alpha: 60),
               ),
             ),
             const SizedBox(height: 32),
@@ -172,7 +172,7 @@ class _AuthLoginTabState extends ConsumerState<AuthLoginTab> {
               keyboardType: TextInputType.emailAddress,
               validator: (value) => _validateField(
                 value,
-                EmailValidator.validate,
+                Validator.validateEmail,
                 _emailTouched,
               ),
               textInputAction: TextInputAction.next,

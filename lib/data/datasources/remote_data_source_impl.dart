@@ -121,7 +121,7 @@ class RemoteDataSourceImpl implements RemoteDataSource {
             },
             body: jsonEncode(request.toJson()),
           )
-          .timeout(Duration(seconds: 10));
+          .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 201 || response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
@@ -167,7 +167,7 @@ class RemoteDataSourceImpl implements RemoteDataSource {
           'Accept': 'application/json',
           'Authorization': 'Bearer $token',
         },
-      ).timeout(Duration(seconds: 10));
+      ).timeout(const Duration(seconds: 10));
 
       // Независимо от ответа сервера, очищаем токены локально
       await TokenStorage.clearTokens();
@@ -234,7 +234,7 @@ class RemoteDataSourceImpl implements RemoteDataSource {
             },
             body: jsonEncode({'refresh_token': refreshToken}),
           )
-          .timeout(Duration(seconds: 10));
+          .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
