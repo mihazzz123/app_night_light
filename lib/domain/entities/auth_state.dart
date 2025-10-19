@@ -1,73 +1,45 @@
 // domain/entities/auth_state.dart
 import 'user_entity.dart';
 
+enum AuthStatus {
+  initial, // начальная
+  loading, // загрузка
+  authenticated, // аутентифицировано
+  unauthenticated, // неаутентифицировано
+  error, // ошибка
+}
+
 class AuthState {
-  final bool isLoading;
-  final bool isAuthorized;
+  final AuthStatus status;
   final UserEntity? user;
   final String? error;
 
   const AuthState({
-    required this.isLoading,
-    required this.isAuthorized,
+    required this.status,
     this.user,
     this.error,
   });
 
-  factory AuthState.initial() {
-    return const AuthState(
-      isLoading: true,
-      isAuthorized: false,
-      user: null,
-      error: null,
-    );
-  }
+  bool get isLoading => status == AuthStatus.loading;
+  bool get isAuthorized => status == AuthStatus.authenticated;
+  bool get hasError => status == AuthStatus.error && error != null;
 
-  factory AuthState.loading() {
-    return const AuthState(
-      isLoading: true,
-      isAuthorized: false,
-      user: null,
-      error: null,
-    );
-  }
-
-  factory AuthState.authenticated(UserEntity user) {
-    return AuthState(
-      isLoading: false,
-      isAuthorized: true,
-      user: user,
-      error: null,
-    );
-  }
-
-  factory AuthState.unauthenticated() {
-    return const AuthState(
-      isLoading: false,
-      isAuthorized: false,
-      user: null,
-      error: null,
-    );
-  }
-
-  factory AuthState.error(String error) {
-    return AuthState(
-      isLoading: false,
-      isAuthorized: false,
-      user: null,
-      error: error,
-    );
-  }
+  factory AuthState.initial() => const AuthState(status: AuthStatus.initial);
+  factory AuthState.loading() => const AuthState(status: AuthStatus.loading);
+  factory AuthState.authenticated(UserEntity user) =>
+      AuthState(status: AuthStatus.authenticated, user: user);
+  factory AuthState.unauthenticated() =>
+      const AuthState(status: AuthStatus.unauthenticated, user: null);
+  factory AuthState.error(String message) =>
+      AuthState(status: AuthStatus.error, error: message);
 
   AuthState copyWith({
-    bool? isLoading,
-    bool? isAuthorized,
+    AuthStatus? status,
     UserEntity? user,
     String? error,
   }) {
     return AuthState(
-      isLoading: isLoading ?? this.isLoading,
-      isAuthorized: isAuthorized ?? this.isAuthorized,
+      status: status ?? this.status,
       user: user ?? this.user,
       error: error ?? this.error,
     );

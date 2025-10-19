@@ -1,10 +1,11 @@
-// presentation/screens/auth_register_tab.dart
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/di.dart';
 import '../../core/utils/validators.dart';
-import '../../domain/entities/user_entity.dart';
-import 'home_screen.dart';
+import '../../domain/entities/auth_state.dart';
+import 'auth_screen.dart';
 
 class AuthRegisterTab extends ConsumerStatefulWidget {
   const AuthRegisterTab({Key? key}) : super(key: key);
@@ -25,68 +26,163 @@ class _AuthRegisterTabState extends ConsumerState<AuthRegisterTab> {
   bool _emailTouched = false;
   bool _passwordTouched = false;
   bool _confirmPasswordTouched = false;
+  Timer? _autoNavigateTimer;
 
   @override
   void dispose() {
     registerEmailController.dispose();
     registerPasswordController.dispose();
     registerConfirmPasswordController.dispose();
+    _autoNavigateTimer?.cancel(); // Важно: отменяем таймер при dispose
     super.dispose();
   }
 
   Future<void> _register() async {
+    final authViewModel = ref.read(authViewModelProvider.notifier);
+
     setState(() {
       _emailTouched = true;
       _passwordTouched = true;
       _confirmPasswordTouched = true;
     });
 
-    if (!_registerFormKey.currentState!.validate()) {
-      return;
-    }
+    if (!_registerFormKey.currentState!.validate()) return;
 
     final email = registerEmailController.text.trim();
     final password = registerPasswordController.text.trim();
     final confirmPassword = registerConfirmPasswordController.text.trim();
 
     if (password != confirmPassword) {
-      _showError('Пароли не совпадают');
+      if (mounted) _showError('Пароли не совпадают');
       return;
     }
 
     setState(() => _isLoading = true);
 
     try {
-      final authViewModel = ref.read(authViewModelProvider.notifier);
       await authViewModel.register(
         Validator.normalizeEmail(email),
         password,
         confirmPassword,
       );
 
+      if (!mounted) return;
+
       final authState = ref.read(authViewModelProvider);
-      if (authState.isAuthorized && authState.user != null) {
-        _navigateToLogin(authState.user!);
-      } else if (authState.error != null) {
+
+      if (authState.status == AuthStatus.unauthenticated) {
+        _showSuccess();
+        _clearForm();
+
+        _startAutoNavigateTimer();
+      } else if (authState.hasError) {
         _showError(authState.error!);
       }
     } catch (e) {
-      _showError('Ошибка при регистрации: $e');
+      if (mounted) _showError('Ошибка при регистрации: $e');
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  void _navigateToLogin(UserEntity user) {
+  void _startAutoNavigateTimer() {
+    // Отменяем предыдущий таймер, если он был
+    _autoNavigateTimer?.cancel();
+
+    // Создаем новый таймер на 5 секунд
+    _autoNavigateTimer = Timer(const Duration(seconds: 5), () {
+      if (mounted) {
+        _navigateToLogin();
+      }
+    });
+  }
+
+  void _clearForm() {
+    registerEmailController.clear();
+    registerPasswordController.clear();
+    registerConfirmPasswordController.clear();
+    setState(() {
+      _emailTouched = false;
+      _passwordTouched = false;
+      _confirmPasswordTouched = false;
+    });
+    _registerFormKey.currentState?.reset();
+  }
+
+  void _navigateToLogin() {
+    if (!mounted) return;
+
+    // Отменяем таймер, если он еще активен
+    _autoNavigateTimer?.cancel();
+
+    // Закрываем текущий snackbar если открыт
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (_) => HomeScreen(user: user)),
+      MaterialPageRoute(
+        builder: (_) => const AuthScreen(),
+      ),
+    );
+  }
+
+  void _showSuccess() {
+    if (!mounted) return;
+
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Регистрация прошла успешно!',
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onPrimary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Подтвердите регистрацию через письмо на почте.',
+                    style: textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onPrimary.withValues(alpha: 90),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Автоматический переход через 5 секунд...',
+                    style: textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onPrimary.withValues(alpha: 80),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: colorScheme.primary,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        duration: const Duration(seconds: 6), // Немного больше чем таймер
+        action: SnackBarAction(
+          label: 'Войти сейчас',
+          textColor: colorScheme.onPrimary,
+          onPressed: _navigateToLogin,
+        ),
+      ),
     );
   }
 
   void _showError(String message) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -155,11 +251,8 @@ class _AuthRegisterTabState extends ConsumerState<AuthRegisterTab> {
         key: _registerFormKey,
         child: Column(
           children: [
-            // Логотип
             _buildLogo(colorScheme),
             const SizedBox(height: 24),
-
-            // Заголовок
             Text(
               'Создайте аккаунт',
               style: textTheme.headlineMedium?.copyWith(
@@ -174,8 +267,6 @@ class _AuthRegisterTabState extends ConsumerState<AuthRegisterTab> {
               ),
             ),
             const SizedBox(height: 32),
-
-            // Поле email
             TextFormField(
               controller: registerEmailController,
               decoration: const InputDecoration(
@@ -197,8 +288,6 @@ class _AuthRegisterTabState extends ConsumerState<AuthRegisterTab> {
               },
             ),
             const SizedBox(height: 16),
-
-            // Поле пароля
             TextFormField(
               controller: registerPasswordController,
               decoration: InputDecoration(
@@ -230,8 +319,6 @@ class _AuthRegisterTabState extends ConsumerState<AuthRegisterTab> {
               },
             ),
             const SizedBox(height: 16),
-
-            // Подтверждение пароля
             TextFormField(
               controller: registerConfirmPasswordController,
               decoration: InputDecoration(
@@ -266,8 +353,6 @@ class _AuthRegisterTabState extends ConsumerState<AuthRegisterTab> {
               },
             ),
             const SizedBox(height: 24),
-
-            // Кнопка регистрации
             SizedBox(
               width: double.infinity,
               height: 50,

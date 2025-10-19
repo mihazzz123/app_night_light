@@ -128,13 +128,13 @@ class RemoteDataSourceImpl implements RemoteDataSource {
         return RegisterResponseModel.fromJson(responseData);
       } else if (response.statusCode == 400) {
         final errorData = jsonDecode(response.body);
-        throw Exception(errorData['message'] ?? 'Ошибка регистрации');
+        throw Exception(errorData['error'] ?? 'Ошибка регистрации');
       } else if (response.statusCode == 409) {
         throw Exception('Пользователь с таким email уже существует');
       } else {
         final errorData = jsonDecode(response.body);
         throw Exception(
-          errorData['message'] ?? 'Ошибка сервера: ${response.statusCode}',
+          errorData['error'] ?? 'Ошибка сервера: ${response.statusCode}',
         );
       }
     } on http.ClientException catch (e) {
@@ -182,38 +182,6 @@ class RemoteDataSourceImpl implements RemoteDataSource {
       // В случае любой ошибки все равно очищаем токены
       await TokenStorage.clearTokens();
       return true;
-    }
-  }
-
-  @override
-  Future<UserModel?> checkAuthStatus() async {
-    try {
-      final token = await TokenStorage.getAccessToken();
-      if (token == null) {
-        return null;
-      }
-
-      final url = Uri.parse('$_baseUrl/api/auth/me');
-
-      final response = await client.get(
-        url,
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Accept': 'application/json',
-        },
-      ).timeout(const Duration(seconds: 10));
-
-      if (response.statusCode == 200) {
-        final responseData = jsonDecode(response.body);
-        return UserModel.fromJson(responseData);
-      } else {
-        // Если токен невалиден, очищаем его
-        await TokenStorage.clearTokens();
-        return null;
-      }
-    } catch (e) {
-      // В случае ошибки считаем пользователя неавторизованным
-      return null;
     }
   }
 

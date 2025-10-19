@@ -8,5 +8,4 @@ abstract class RemoteDataSource {
   Future<UserModel?> register(String email, String password, String name);
   Future<RegisterResponseModel?> registerWithApi(RegisterRequestModel request);
   Future<bool> logout();
-  Future<UserModel?> checkAuthStatus();
 }

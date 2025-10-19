@@ -39,4 +39,23 @@ class UserEntity {
 
   @override
   int get hashCode => id.hashCode ^ email.hashCode ^ userName.hashCode;
+
+  factory UserEntity.fromLocalStorage({
+    required String email,
+    required String accessToken,
+    String? refreshToken,
+  }) {
+    return UserEntity(
+      id: 'local',
+      email: email,
+      userName: 'local',
+      firstName: 'Local',
+      lastName: 'User',
+      isActive: true,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+      accessToken: accessToken,
+      refreshToken: refreshToken,
+    );
+  }
 }

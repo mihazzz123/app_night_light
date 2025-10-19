@@ -21,9 +21,7 @@ class AuthViewModel extends StateNotifier<AuthState> {
         _loginUser = loginUser,
         _logoutUser = logoutUser,
         _registerUser = registerUser,
-        super(AuthState.initial()) {
-    checkAuthStatus();
-  }
+        super(AuthState.initial());
 
   Future<void> checkAuthStatus() async {
     state = AuthState.loading();
@@ -57,13 +55,13 @@ class AuthViewModel extends StateNotifier<AuthState> {
       String email, String password, String confirmPassword) async {
     state = AuthState.loading();
     try {
-      final user = await _registerUser(
+      final res = await _registerUser(
         email: email,
         password: password,
         confirmPassword: confirmPassword,
       );
-      if (user != null) {
-        state = AuthState.authenticated(user);
+      if (res != null) {
+        state = AuthState.unauthenticated();
       } else {
         state = AuthState.error('Ошибка регистрации');
       }

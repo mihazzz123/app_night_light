@@ -7,4 +7,5 @@ abstract class AuthRepository {
     String password,
     String confirmPassword,
   );
+  Future<bool> logout();
 }

@@ -14,15 +14,8 @@ class CheckAuthStatus {
       return null;
     }
 
-    return UserEntity(
-      id: '', // можно добавить в TokenService, если нужно
+    return UserEntity.fromLocalStorage(
       email: email,
-      userName: '',
-      firstName: '',
-      lastName: '',
-      isActive: true,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
       accessToken: token,
       refreshToken: await tokenService.getRefreshToken(),
     );
