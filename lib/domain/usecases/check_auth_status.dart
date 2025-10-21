@@ -1,23 +1,23 @@
-import 'package:app_night_light/core/services/token_service.dart';
 import 'package:app_night_light/domain/entities/user_entity.dart';
+import '../../core/utils/token_storage.dart';
+import '../../domain/repositories/user_repository.dart';
 
 class CheckAuthStatus {
-  final TokenService tokenService;
+  final UserRepository _userRepository;
 
-  CheckAuthStatus(this.tokenService);
+  CheckAuthStatus(this._userRepository);
 
   Future<UserEntity?> call() async {
-    final token = await tokenService.getAccessToken();
-    final email = tokenService.getUserEmail();
-
-    if (token == null || token.isEmpty || email == null || email.isEmpty) {
-      return null;
+    // Логика проверки статуса аутентификации
+    final token = await TokenStorage.getAccessToken();
+    if (token != null && !await TokenStorage.isTokenExpired()) {
+      final userId = await TokenStorage.getUserId();
+      if (userId != null) {
+        return await _userRepository.getUserById(userId);
+      } else {
+        null;
+      }
     }
-
-    return UserEntity.fromLocalStorage(
-      email: email,
-      accessToken: token,
-      refreshToken: await tokenService.getRefreshToken(),
-    );
+    return null;
   }
 }

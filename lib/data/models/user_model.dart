@@ -1,45 +1,46 @@
 // data/models/user_model.dart
 import '../../domain/entities/user_entity.dart';
 
-class UserModel extends UserEntity {
+class UserModel {
+  final String id;
+  final String email;
+  final String userName;
+  final String? firstName;
+  final String? lastName;
+  final bool isActive;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+  final DateTime? deletedAt;
+
   UserModel({
-    required String id,
-    required String email,
-    required String userName,
-    required String firstName,
-    required String lastName,
-    required bool isActive,
-    required DateTime createdAt,
-    required DateTime updatedAt,
-    DateTime? deletedAt,
-  }) : super(
-          id: id,
-          email: email,
-          userName: userName,
-          firstName: firstName,
-          lastName: lastName,
-          isActive: isActive,
-          createdAt: createdAt,
-          updatedAt: updatedAt,
-          deletedAt: deletedAt,
-        );
+    required this.id,
+    required this.email,
+    required this.userName,
+    this.firstName,
+    this.lastName,
+    this.isActive = true,
+    this.createdAt,
+    this.updatedAt,
+    this.deletedAt,
+  });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
       id: json['id']?.toString() ?? '',
       email: json['email']?.toString() ?? '',
-      userName: json['user_name']?.toString() ?? '',
-      firstName: json['first_name']?.toString() ?? '',
-      lastName: json['last_name']?.toString() ?? '',
-      isActive: json['is_active'] ?? false,
-      createdAt: DateTime.parse(
-        json['created_at'] ?? DateTime.now().toIso8601String(),
-      ),
-      updatedAt: DateTime.parse(
-        json['updated_at'] ?? DateTime.now().toIso8601String(),
-      ),
+      userName:
+          json['user_name']?.toString() ?? json['username']?.toString() ?? '',
+      firstName: json['first_name']?.toString(),
+      lastName: json['last_name']?.toString(),
+      isActive: json['is_active'] ?? true,
+      createdAt: json['created_at'] != null
+          ? DateTime.tryParse(json['created_at'])
+          : null,
+      updatedAt: json['updated_at'] != null
+          ? DateTime.tryParse(json['updated_at'])
+          : null,
       deletedAt: json['deleted_at'] != null
-          ? DateTime.parse(json['deleted_at'])
+          ? DateTime.tryParse(json['deleted_at'])
           : null,
     );
   }
@@ -52,12 +53,13 @@ class UserModel extends UserEntity {
       'first_name': firstName,
       'last_name': lastName,
       'is_active': isActive,
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt.toIso8601String(),
+      'created_at': createdAt?.toIso8601String(),
+      'updated_at': updatedAt?.toIso8601String(),
       'deleted_at': deletedAt?.toIso8601String(),
     };
   }
 
+  // Конвертация в Entity
   UserEntity toEntity() {
     return UserEntity(
       id: id,
@@ -68,7 +70,6 @@ class UserModel extends UserEntity {
       isActive: isActive,
       createdAt: createdAt,
       updatedAt: updatedAt,
-      deletedAt: deletedAt,
     );
   }
 }

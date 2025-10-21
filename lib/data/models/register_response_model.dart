@@ -6,10 +6,6 @@ class RegisterResponseModel {
   final String firstName;
   final String lastName;
   final bool isActive;
-  final DateTime createdAt;
-  final DateTime updatedAt;
-  final String? accessToken;
-  final String? refreshToken;
 
   RegisterResponseModel({
     required this.id,
@@ -18,10 +14,6 @@ class RegisterResponseModel {
     required this.firstName,
     required this.lastName,
     required this.isActive,
-    required this.createdAt,
-    required this.updatedAt,
-    this.accessToken,
-    this.refreshToken,
   });
 
   factory RegisterResponseModel.fromJson(Map<String, dynamic> json) {
@@ -32,14 +24,6 @@ class RegisterResponseModel {
       firstName: json['first_name']?.toString() ?? '',
       lastName: json['last_name']?.toString() ?? '',
       isActive: json['is_active'] ?? false,
-      createdAt: DateTime.parse(
-        json['created_at'] ?? DateTime.now().toIso8601String(),
-      ),
-      updatedAt: DateTime.parse(
-        json['updated_at'] ?? DateTime.now().toIso8601String(),
-      ),
-      accessToken: json['access_token']?.toString(),
-      refreshToken: json['refresh_token']?.toString(),
     );
   }
 }

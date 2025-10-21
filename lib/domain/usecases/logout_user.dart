@@ -1,17 +1,21 @@
-import 'package:app_night_light/core/services/token_service.dart';
 import '../repositories/auth_repository.dart';
+import '../../core/utils/token_storage.dart';
+import '../../domain/repositories/user_repository.dart';
 
 class LogoutUser {
-  final AuthRepository repository;
-  final TokenService tokenService;
+  final AuthRepository _authRepository;
+  final UserRepository _userRepository;
 
-  LogoutUser(this.repository, this.tokenService);
+  LogoutUser(this._authRepository, this._userRepository);
 
   Future<bool> call() async {
-    final success = await repository.logout();
-    if (success) {
-      await tokenService.logout(); // удаляет токены и email
+    try {
+      await _authRepository.logout();
+      await TokenStorage.clearTokens();
+      await _userRepository.clearUser();
+      return true;
+    } catch (e) {
+      return false;
     }
-    return success;
   }
 }

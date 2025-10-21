@@ -6,6 +6,7 @@ import '../../core/di.dart';
 import '../../core/utils/validators.dart';
 import '../../domain/entities/auth_state.dart';
 import 'auth_screen.dart';
+import '../widgets/countdown_snack_bar.dart';
 
 class AuthRegisterTab extends ConsumerStatefulWidget {
   const AuthRegisterTab({Key? key}) : super(key: key);
@@ -33,7 +34,7 @@ class _AuthRegisterTabState extends ConsumerState<AuthRegisterTab> {
     registerEmailController.dispose();
     registerPasswordController.dispose();
     registerConfirmPasswordController.dispose();
-    _autoNavigateTimer?.cancel(); // Важно: отменяем таймер при dispose
+    _autoNavigateTimer?.cancel();
     super.dispose();
   }
 
@@ -61,9 +62,9 @@ class _AuthRegisterTabState extends ConsumerState<AuthRegisterTab> {
 
     try {
       await authViewModel.register(
-        Validator.normalizeEmail(email),
-        password,
-        confirmPassword,
+        email: Validator.normalizeEmail(email),
+        password: password,
+        confirmPassword: confirmPassword,
       );
 
       if (!mounted) return;
@@ -73,7 +74,6 @@ class _AuthRegisterTabState extends ConsumerState<AuthRegisterTab> {
       if (authState.status == AuthStatus.unauthenticated) {
         _showSuccess();
         _clearForm();
-
         _startAutoNavigateTimer();
       } else if (authState.hasError) {
         _showError(authState.error!);
@@ -86,7 +86,6 @@ class _AuthRegisterTabState extends ConsumerState<AuthRegisterTab> {
   }
 
   void _startAutoNavigateTimer() {
-    // Отменяем предыдущий таймер, если он был
     _autoNavigateTimer?.cancel();
 
     // Создаем новый таймер на 5 секунд
@@ -111,18 +110,16 @@ class _AuthRegisterTabState extends ConsumerState<AuthRegisterTab> {
 
   void _navigateToLogin() {
     if (!mounted) return;
-
-    // Отменяем таймер, если он еще активен
+    // Отменяем оба таймера
     _autoNavigateTimer?.cancel();
 
     // Закрываем текущий snackbar если открыт
+    if (!mounted) return;
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
 
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(
-        builder: (_) => const AuthScreen(),
-      ),
+      MaterialPageRoute(builder: (_) => const AuthScreen()),
     );
   }
 
@@ -130,48 +127,18 @@ class _AuthRegisterTabState extends ConsumerState<AuthRegisterTab> {
     if (!mounted) return;
 
     final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Регистрация прошла успешно!',
-                    style: textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onPrimary,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Подтвердите регистрацию через письмо на почте.',
-                    style: textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onPrimary.withValues(alpha: 90),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Автоматический переход через 5 секунд...',
-                    style: textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onPrimary.withValues(alpha: 80),
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+        content: CountdownSnackBar(
+          onNavigate: _navigateToLogin,
+          onTimerComplete: _navigateToLogin,
+          initialSeconds: 5,
         ),
         backgroundColor: colorScheme.primary,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        duration: const Duration(seconds: 6), // Немного больше чем таймер
+        duration: const Duration(seconds: 6),
         action: SnackBarAction(
           label: 'Войти сейчас',
           textColor: colorScheme.onPrimary,
@@ -179,6 +146,8 @@ class _AuthRegisterTabState extends ConsumerState<AuthRegisterTab> {
         ),
       ),
     );
+
+    _startAutoNavigateTimer();
   }
 
   void _showError(String message) {
@@ -208,14 +177,14 @@ class _AuthRegisterTabState extends ConsumerState<AuthRegisterTab> {
 
   Widget _buildLogo(ColorScheme colorScheme) {
     return Container(
-      height: 120,
-      width: 120,
+      height: 100,
+      width: 100,
       decoration: BoxDecoration(
         color: colorScheme.surface,
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: colorScheme.primary.withOpacity(0.1),
+            color: colorScheme.primary.withValues(alpha: 10),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -249,139 +218,145 @@ class _AuthRegisterTabState extends ConsumerState<AuthRegisterTab> {
       padding: const EdgeInsets.all(24),
       child: Form(
         key: _registerFormKey,
-        child: Column(
-          children: [
-            _buildLogo(colorScheme),
-            const SizedBox(height: 24),
-            Text(
-              'Создайте аккаунт',
-              style: textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Заполните данные для регистрации',
-              style: textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurface.withOpacity(0.6),
-              ),
-            ),
-            const SizedBox(height: 32),
-            TextFormField(
-              controller: registerEmailController,
-              decoration: const InputDecoration(
-                labelText: 'Email',
-                hintText: 'example@email.com',
-                prefixIcon: Icon(Icons.email_outlined),
-              ),
-              keyboardType: TextInputType.emailAddress,
-              validator: (value) => _validateField(
-                value,
-                Validator.validateEmail,
-                _emailTouched,
-              ),
-              textInputAction: TextInputAction.next,
-              onChanged: (value) {
-                if (!_emailTouched) {
-                  setState(() => _emailTouched = true);
-                }
-              },
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: registerPasswordController,
-              decoration: InputDecoration(
-                labelText: 'Пароль',
-                hintText: 'Минимум 8 символов',
-                prefixIcon: const Icon(Icons.lock_outline),
-                suffixIcon: IconButton(
-                  icon: Icon(_obscurePassword
-                      ? Icons.visibility_off_outlined
-                      : Icons.visibility_outlined),
-                  onPressed: () {
-                    setState(() {
-                      _obscurePassword = !_obscurePassword;
-                    });
-                  },
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              _buildLogo(colorScheme),
+              const SizedBox(height: 16),
+              Text(
+                'Создайте аккаунт',
+                style: textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
                 ),
               ),
-              obscureText: _obscurePassword,
-              validator: (value) => _validateField(
-                value,
-                Validator.validatePassword,
-                _passwordTouched,
-              ),
-              textInputAction: TextInputAction.next,
-              onChanged: (value) {
-                if (!_passwordTouched) {
-                  setState(() => _passwordTouched = true);
-                }
-              },
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: registerConfirmPasswordController,
-              decoration: InputDecoration(
-                labelText: 'Подтвердите пароль',
-                hintText: 'Повторите пароль',
-                prefixIcon: const Icon(Icons.lock_outline),
-                suffixIcon: IconButton(
-                  icon: Icon(_obscureConfirmPassword
-                      ? Icons.visibility_off_outlined
-                      : Icons.visibility_outlined),
-                  onPressed: () {
-                    setState(() {
-                      _obscureConfirmPassword = !_obscureConfirmPassword;
-                    });
-                  },
+              const SizedBox(height: 8),
+              Text(
+                'Заполните данные для регистрации',
+                style: textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurface.withValues(alpha: 60),
                 ),
               ),
-              obscureText: _obscureConfirmPassword,
-              validator: (value) => _validateField(
-                value,
-                (value) => Validator.validatePassword(
+              const SizedBox(height: 32),
+              TextFormField(
+                controller: registerEmailController,
+                decoration: const InputDecoration(
+                  labelText: 'Email',
+                  hintText: 'example@email.com',
+                  prefixIcon: Icon(Icons.email_outlined),
+                ),
+                keyboardType: TextInputType.emailAddress,
+                validator: (value) => _validateField(
                   value,
-                  confirmPassword: registerPasswordController.text,
+                  Validator.validateEmail,
+                  _emailTouched,
                 ),
-                _confirmPasswordTouched,
+                textInputAction: TextInputAction.next,
+                onChanged: (value) {
+                  if (!_emailTouched) {
+                    setState(() => _emailTouched = true);
+                  }
+                },
               ),
-              textInputAction: TextInputAction.done,
-              onChanged: (value) {
-                if (!_confirmPasswordTouched) {
-                  setState(() => _confirmPasswordTouched = true);
-                }
-              },
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: _isLoading ? null : _register,
-                style: ElevatedButton.styleFrom(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: registerPasswordController,
+                decoration: InputDecoration(
+                  labelText: 'Пароль',
+                  hintText: 'Минимум 8 символов',
+                  prefixIcon: const Icon(Icons.lock_outline),
+                  suffixIcon: IconButton(
+                    icon: Icon(_obscurePassword
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined),
+                    onPressed: () {
+                      setState(() {
+                        _obscurePassword = !_obscurePassword;
+                      });
+                    },
                   ),
                 ),
-                child: _isLoading
-                    ? SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: colorScheme.onPrimary,
-                        ),
-                      )
-                    : Text(
-                        'Зарегистрироваться',
-                        style: textTheme.labelLarge?.copyWith(
-                          color: colorScheme.onPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                obscureText: _obscurePassword,
+                validator: (value) => _validateField(
+                  value,
+                  Validator.validatePassword,
+                  _passwordTouched,
+                ),
+                textInputAction: TextInputAction.next,
+                onChanged: (value) {
+                  if (!_passwordTouched) {
+                    setState(() => _passwordTouched = true);
+                  }
+                },
               ),
-            ),
-          ],
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: registerConfirmPasswordController,
+                decoration: InputDecoration(
+                  labelText: 'Подтвердите пароль',
+                  hintText: 'Повторите пароль',
+                  prefixIcon: const Icon(Icons.lock_outline),
+                  suffixIcon: IconButton(
+                    icon: Icon(_obscureConfirmPassword
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined),
+                    onPressed: () {
+                      setState(() {
+                        _obscureConfirmPassword = !_obscureConfirmPassword;
+                      });
+                    },
+                  ),
+                ),
+                obscureText: _obscureConfirmPassword,
+                validator: (value) => _validateField(
+                  value,
+                  (value) => Validator.validatePassword(
+                    value,
+                    confirmPassword: registerPasswordController.text,
+                  ),
+                  _confirmPasswordTouched,
+                ),
+                textInputAction: TextInputAction.done,
+                onChanged: (value) {
+                  if (!_confirmPasswordTouched) {
+                    setState(() => _confirmPasswordTouched = true);
+                  }
+                },
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _register,
+                  style: ElevatedButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: _isLoading
+                      ? SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: colorScheme.onPrimary,
+                          ),
+                        )
+                      : Text(
+                          'Зарегистрироваться',
+                          style: textTheme.labelLarge?.copyWith(
+                            color: colorScheme.onPrimary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                ),
+              ),
+              // Добавляем отступ снизу для клавиатуры
+              SizedBox(
+                height: MediaQuery.of(context).viewInsets.bottom > 0 ? 100 : 24,
+              ), // ← Динамический отступ
+            ],
+          ),
         ),
       ),
     );

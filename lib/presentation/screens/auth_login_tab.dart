@@ -32,6 +32,9 @@ class _AuthLoginTabState extends ConsumerState<AuthLoginTab> {
   }
 
   Future<void> _login() async {
+    // Проверяем mounted в начале
+    if (!mounted) return;
+
     setState(() {
       _emailTouched = true;
       _passwordTouched = true;
@@ -41,14 +44,19 @@ class _AuthLoginTabState extends ConsumerState<AuthLoginTab> {
       return;
     }
 
+    if (!mounted) return;
     setState(() => _isLoading = true);
 
+    // Сохраняем необходимые данные синхронно
+    final email = Validator.normalizeEmail(loginEmailController.text.trim());
+    final password = loginPasswordController.text.trim();
+    final authNotifier = ref.read(authViewModelProvider.notifier);
+
     try {
-      final authViewModel = ref.read(authViewModelProvider.notifier);
-      await authViewModel.login(
-        Validator.normalizeEmail(loginEmailController.text.trim()),
-        loginPasswordController.text.trim(),
-      );
+      await authNotifier.login(email, password);
+
+      // После асинхронной операции проверяем mounted
+      if (!mounted) return;
 
       final authState = ref.read(authViewModelProvider);
       if (authState.isAuthorized && authState.user != null) {
@@ -57,7 +65,9 @@ class _AuthLoginTabState extends ConsumerState<AuthLoginTab> {
         _showError(authState.error!);
       }
     } catch (e) {
-      _showError('Ошибка при входе: $e');
+      if (mounted) {
+        _showError('Ошибка при входе: $e');
+      }
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -98,14 +108,14 @@ class _AuthLoginTabState extends ConsumerState<AuthLoginTab> {
 
   Widget _buildLogo(ColorScheme colorScheme) {
     return Container(
-      height: 120,
-      width: 120,
+      height: 100,
+      width: 100,
       decoration: BoxDecoration(
         color: colorScheme.surface,
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: colorScheme.primary.withOpacity(0.1),
+            color: colorScheme.primary.withValues(alpha: 0),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -139,136 +149,141 @@ class _AuthLoginTabState extends ConsumerState<AuthLoginTab> {
       padding: const EdgeInsets.all(24),
       child: Form(
         key: _loginFormKey,
-        child: Column(
-          children: [
-            // Логотип
-            _buildLogo(colorScheme),
-            const SizedBox(height: 24),
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              // Логотип
+              _buildLogo(colorScheme),
+              const SizedBox(height: 16),
 
-            // Заголовок
-            Text(
-              'Добро пожаловать',
-              style: textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Войдите в свой аккаунт',
-              style: textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurface.withValues(alpha: 60),
-              ),
-            ),
-            const SizedBox(height: 32),
-
-            // Поле email
-            TextFormField(
-              controller: loginEmailController,
-              decoration: const InputDecoration(
-                labelText: 'Email',
-                hintText: 'example@email.com',
-                prefixIcon: Icon(Icons.email_outlined),
-              ),
-              keyboardType: TextInputType.emailAddress,
-              validator: (value) => _validateField(
-                value,
-                Validator.validateEmail,
-                _emailTouched,
-              ),
-              textInputAction: TextInputAction.next,
-              onChanged: (value) {
-                if (!_emailTouched) {
-                  setState(() => _emailTouched = true);
-                }
-              },
-            ),
-            const SizedBox(height: 16),
-
-            // Поле пароля
-            TextFormField(
-              controller: loginPasswordController,
-              decoration: InputDecoration(
-                labelText: 'Пароль',
-                hintText: 'Введите ваш пароль',
-                prefixIcon: const Icon(Icons.lock_outline),
-                suffixIcon: IconButton(
-                  icon: Icon(_obscurePassword
-                      ? Icons.visibility_off_outlined
-                      : Icons.visibility_outlined),
-                  onPressed: () {
-                    setState(() {
-                      _obscurePassword = !_obscurePassword;
-                    });
-                  },
+              // Заголовок
+              Text(
+                'Добро пожаловать',
+                style: textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
                 ),
               ),
-              obscureText: _obscurePassword,
-              validator: (value) => _validateField(
-                value,
-                (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Введите пароль';
+              const SizedBox(height: 8),
+              Text(
+                'Войдите в свой аккаунт',
+                style: textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurface.withValues(alpha: 60),
+                ),
+              ),
+              const SizedBox(height: 32),
+
+              // Поле email
+              TextFormField(
+                controller: loginEmailController,
+                decoration: const InputDecoration(
+                  labelText: 'Email',
+                  hintText: 'example@email.com',
+                  prefixIcon: Icon(Icons.email_outlined),
+                ),
+                keyboardType: TextInputType.emailAddress,
+                validator: (value) => _validateField(
+                  value,
+                  Validator.validateEmail,
+                  _emailTouched,
+                ),
+                textInputAction: TextInputAction.next,
+                onChanged: (value) {
+                  if (!_emailTouched) {
+                    setState(() => _emailTouched = true);
                   }
-                  return null;
                 },
-                _passwordTouched,
               ),
-              textInputAction: TextInputAction.done,
-              onChanged: (value) {
-                if (!_passwordTouched) {
-                  setState(() => _passwordTouched = true);
-                }
-              },
-              onFieldSubmitted: (_) => _login(),
-            ),
-            const SizedBox(height: 8),
+              const SizedBox(height: 16),
 
-            // Забыли пароль
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
-                onPressed: _isLoading
-                    ? null
-                    : () => showDialog(
-                          context: context,
-                          builder: (context) =>
-                              const AuthForgotPasswordDialog(),
-                        ),
-                child: const Text('Забыли пароль?'),
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Кнопка входа
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: _isLoading ? null : _login,
-                style: ElevatedButton.styleFrom(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+              // Поле пароля
+              TextFormField(
+                controller: loginPasswordController,
+                decoration: InputDecoration(
+                  labelText: 'Пароль',
+                  hintText: 'Введите ваш пароль',
+                  prefixIcon: const Icon(Icons.lock_outline),
+                  suffixIcon: IconButton(
+                    icon: Icon(_obscurePassword
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined),
+                    onPressed: () {
+                      setState(() {
+                        _obscurePassword = !_obscurePassword;
+                      });
+                    },
                   ),
                 ),
-                child: _isLoading
-                    ? SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: colorScheme.onPrimary,
-                        ),
-                      )
-                    : Text(
-                        'Войти',
-                        style: textTheme.labelLarge?.copyWith(
-                          color: colorScheme.onPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                obscureText: _obscurePassword,
+                validator: (value) => _validateField(
+                  value,
+                  (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Введите пароль';
+                    }
+                    return null;
+                  },
+                  _passwordTouched,
+                ),
+                textInputAction: TextInputAction.done,
+                onChanged: (value) {
+                  if (!_passwordTouched) {
+                    setState(() => _passwordTouched = true);
+                  }
+                },
+                onFieldSubmitted: (_) => _login(),
               ),
-            ),
-          ],
+              const SizedBox(height: 8),
+
+              // Забыли пароль
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: _isLoading
+                      ? null
+                      : () => showDialog(
+                            context: context,
+                            builder: (context) =>
+                                const AuthForgotPasswordDialog(),
+                          ),
+                  child: const Text('Забыли пароль?'),
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              // Кнопка входа
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _login,
+                  style: ElevatedButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: _isLoading
+                      ? SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: colorScheme.onPrimary,
+                          ),
+                        )
+                      : Text(
+                          'Войти',
+                          style: textTheme.labelLarge?.copyWith(
+                            color: colorScheme.onPrimary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                ),
+              ),
+              SizedBox(
+                height: MediaQuery.of(context).viewInsets.bottom > 0 ? 100 : 24,
+              ), // ← Динамический отступ
+            ],
+          ),
         ),
       ),
     );

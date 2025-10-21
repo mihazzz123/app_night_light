@@ -1,4 +1,3 @@
-import '../entities/user_entity.dart';
 import '../repositories/auth_repository.dart';
 
 class RegisterUser {
@@ -6,7 +5,7 @@ class RegisterUser {
 
   RegisterUser(this.repository);
 
-  Future<UserEntity?> call({
+  Future<bool> call({
     required String email,
     required String password,
     required String confirmPassword,

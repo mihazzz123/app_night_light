@@ -1,4 +1,5 @@
 // presentation/screens/splash_router.dart
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'home_screen.dart';
@@ -18,15 +19,21 @@ class _SplashRouterState extends ConsumerState<SplashRouter> {
   @override
   void initState() {
     super.initState();
-    _performInitialAuthCheck();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _performInitialAuthCheck();
+    });
   }
 
   Future<void> _performInitialAuthCheck() async {
+    final authNotifier = ref.read(authViewModelProvider.notifier);
+
     try {
-      await ref.read(authViewModelProvider.notifier).checkAuthStatus();
+      await authNotifier.checkAuthStatus();
     } catch (e) {
       // Ошибка уже будет обработана в состоянии AuthState
-      print('Initial auth check error: $e');
+      if (kDebugMode) {
+        print('Initial auth check error: $e');
+      }
     } finally {
       if (mounted) {
         setState(() {

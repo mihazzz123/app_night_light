@@ -1,35 +1,38 @@
 // data/repositories/auth_repository_impl.dart
-import '../../domain/entities/user_entity.dart';
+import '../../domain/entities/auth_response_entity.dart';
 import '../../domain/repositories/auth_repository.dart';
-import '../datasources/remote_data_source.dart';
+import '../datasources/auth_remote_data_source.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
-  final RemoteDataSource remoteDataSource;
+  final AuthRemoteDataSource authRemoteDataSource;
 
-  AuthRepositoryImpl(this.remoteDataSource);
+  AuthRepositoryImpl({required this.authRemoteDataSource});
 
   @override
-  Future<UserEntity?> login(String email, String password) async {
-    final userModel = await remoteDataSource.login(email, password);
-    return userModel?.toEntity();
+  Future<AuthResponseEntity?> login(String email, String password) async {
+    final authResponse = await authRemoteDataSource.login(email, password);
+    if (authResponse != null) {
+      return authResponse.toEntity();
+    }
+    return null;
   }
 
   @override
-  Future<UserEntity?> register(
+  Future<bool> register(
     String email,
     String password,
     String confirmPassword,
   ) async {
-    final userModel = await remoteDataSource.register(
-      email,
-      password,
-      confirmPassword,
+    final res = await authRemoteDataSource.register(
+      email: email,
+      password: password,
+      confirmPassword: confirmPassword,
     );
-    return userModel?.toEntity();
+    return res;
   }
 
   @override
   Future<bool> logout() async {
-    return await remoteDataSource.logout();
+    return await authRemoteDataSource.logout();
   }
 }

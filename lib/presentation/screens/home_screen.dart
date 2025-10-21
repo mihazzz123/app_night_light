@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/user_entity.dart';
 import '../../core/di.dart';
-import 'auth_screen.dart';
 
 class HomeScreen extends ConsumerWidget {
   // Изменено на ConsumerWidget
@@ -12,11 +11,6 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final authState = ref.watch(authViewModelProvider);
-    if (authState.isAuthorized && authState.user != null) {
-      return const AuthScreen();
-    }
-
     // Добавлен WidgetRef
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;

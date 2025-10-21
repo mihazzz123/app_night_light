@@ -10,28 +10,28 @@ class TokenStorage {
   static Future<void> saveTokens({
     required String accessToken,
     required String refreshToken,
-    required int expiresIn,
+    required DateTime expiresIn, // Теперь это DateTime, а не int
     required String userId,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_accessTokenKey, accessToken);
     await prefs.setString(_refreshTokenKey, refreshToken);
-    await prefs.setInt(
-      _tokenExpiryKey,
-      DateTime.now().millisecondsSinceEpoch + (expiresIn * 1000),
-    );
+
+    // Сохраняем timestamp истечения токена
+    await prefs.setInt(_tokenExpiryKey, expiresIn.millisecondsSinceEpoch);
+
     await prefs.setString(_userIdKey, userId);
   }
 
   static Future<String?> getAccessToken() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString(_accessTokenKey);
-    final expiry = prefs.getInt(_tokenExpiryKey);
+    final expiryTimestamp = prefs.getInt(_tokenExpiryKey);
 
     // Проверяем, не истек ли токен
-    if (token != null && expiry != null) {
+    if (token != null && expiryTimestamp != null) {
       final now = DateTime.now().millisecondsSinceEpoch;
-      if (now < expiry) {
+      if (now < expiryTimestamp) {
         return token;
       } else {
         // Токен истек, удаляем его
@@ -57,11 +57,34 @@ class TokenStorage {
     return token != null;
   }
 
+  static Future<DateTime?> getTokenExpiry() async {
+    final prefs = await SharedPreferences.getInstance();
+    final expiryTimestamp = prefs.getInt(_tokenExpiryKey);
+    return expiryTimestamp != null
+        ? DateTime.fromMillisecondsSinceEpoch(expiryTimestamp)
+        : null;
+  }
+
   static Future<void> clearTokens() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_accessTokenKey);
     await prefs.remove(_refreshTokenKey);
     await prefs.remove(_tokenExpiryKey);
     await prefs.remove(_userIdKey);
+  }
+
+  static Future<bool> isTokenExpired() async {
+    final expiry = await getTokenExpiry();
+    if (expiry == null) return true;
+    return DateTime.now().isAfter(expiry);
+  }
+
+  static Future<int?> getSecondsUntilExpiry() async {
+    final expiry = await getTokenExpiry();
+    if (expiry == null) return null;
+
+    final now = DateTime.now();
+    final difference = expiry.difference(now);
+    return difference.inSeconds;
   }
 }
