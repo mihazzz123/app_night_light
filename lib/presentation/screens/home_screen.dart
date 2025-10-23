@@ -1,206 +1,193 @@
+import 'package:app_night_light/core/di.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/user_entity.dart';
-import '../../core/di.dart';
+import '../../domain/entities/main_state.dart';
 
-class HomeScreen extends ConsumerWidget {
-  // Изменено на ConsumerWidget
+class HomeScreen extends ConsumerStatefulWidget {
   final UserEntity user;
 
   const HomeScreen({super.key, required this.user});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  int currentPageIndex = 0;
+  Home? currentHome;
+  bool _isLoading = true;
+  List<Home> homes = [];
+  List<Device> devices = [];
+
+  // Список экранов для каждой вкладки
+  late final List<Widget> _screens;
+
+  int selectedIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _init();
+    _screens = [];
+  }
+
+  IconData _getIconForIndex(int index) {
+    switch (index) {
+      case 0:
+        return Icons.home;
+      case 1:
+        return Icons.person;
+      case 3:
+        return Icons.settings;
+      default:
+        return Icons.help_outline;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     // Добавлен WidgetRef
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'Главная',
-          style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
-        ),
-        centerTitle: true,
-        elevation: 0,
+      appBar: _appPanel(),
+      bottomNavigationBar: _navPanel(colorScheme),
+      body: Padding(
+        padding: const EdgeInsets.all(24),
+        child: _isLoading
+            ? SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: colorScheme.onPrimary,
+                ),
+              )
+            : GridView.count(
+                crossAxisCount: 2,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                children: [
+                  Text(
+                    'Температура 22,5C ',
+                    style: textTheme.bodyMedium?.copyWith(
+                      fontSize: 12,
+                    ),
+                  ),
+                  Text(
+                    'Влажность 55.3%',
+                    style: textTheme.bodyMedium?.copyWith(
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
       ),
-      body: Center(
-        child: SingleChildScrollView(
-          child: Container(
-            constraints: BoxConstraints(maxWidth: 400),
-            padding: EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Логотип
-                Container(
-                  height: 120,
-                  width: 120,
-                  decoration: BoxDecoration(
-                    color: colorScheme.surface,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: colorScheme.primary.withOpacity(0.1),
-                        blurRadius: 12,
-                        offset: Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: ClipOval(
-                    child: Image.asset(
-                      'assets/images/logo.png',
-                      height: 100,
-                      width: 100,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          color: colorScheme.primaryContainer,
-                          child: Icon(
-                            Icons.nightlight_round,
-                            size: 48,
-                            color: colorScheme.primary,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-                SizedBox(height: 24),
+    );
+  }
 
-                // Приветствие
-                Text(
-                  'Добро пожаловать!',
-                  style: textTheme.headlineMedium?.copyWith(
-                    color: colorScheme.onBackground,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                SizedBox(height: 8),
+  PreferredSizeWidget _appPanel() {
+    return AppBar(
+      centerTitle: false,
+      title: Text(
+        currentHome?.name ?? 'Выберите дом',
+      ),
+      actions: [
+        PopupMenuButton<Home>(
+          icon: const Icon(Icons.home_work),
+          padding: const EdgeInsetsGeometry.all(16),
+          onSelected: (Home home) {
+            setState(() {
+              currentHome = home;
+            });
+          },
+          itemBuilder: (BuildContext context) => [
+            for (final home in homes)
+              PopupMenuItem<Home>(
+                value: home,
+                child: Text(home.name),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
 
-                // Информация о пользователе
-                Card(
-                  elevation: 0,
-                  color: colorScheme.surfaceVariant,
-                  child: Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Column(
-                      children: [
-                        _buildUserInfoRow(
-                          'Имя пользователя',
-                          user.userName,
-                          colorScheme,
-                          textTheme,
-                        ),
-                        _buildUserInfoRow(
-                          'Email',
-                          user.email,
-                          colorScheme,
-                          textTheme,
-                        ),
-                        _buildUserInfoRow(
-                          'Полное имя',
-                          '${user.firstName} ${user.lastName}',
-                          colorScheme,
-                          textTheme,
-                        ),
-                        _buildUserInfoRow(
-                          'Статус',
-                          user.isActive ? 'Активен' : 'Неактивен',
-                          colorScheme,
-                          textTheme,
-                        ),
-                      ],
-                    ),
+  Widget _navPanel(ColorScheme colorScheme) {
+    return BottomAppBar(
+      color: Theme.of(context).colorScheme.surface,
+      shape: const CircularNotchedRectangle(),
+      elevation: 8,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            for (int i = 0; i < 4; i++)
+              Expanded(
+                child: Center(
+                  child: IconButton(
+                    icon: Icon(_getIconForIndex(i)),
+                    color: selectedIndex == i
+                        ? Theme.of(context).colorScheme.primary
+                        : Colors.grey,
+                    onPressed: () {
+                      setState(() {
+                        selectedIndex = i;
+                      });
+                    },
                   ),
                 ),
-                SizedBox(height: 32),
-
-                // Кнопка выхода
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () => _logout(context, ref),
-                    style: ElevatedButton.styleFrom(
-                      padding: EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      backgroundColor: colorScheme.error,
-                    ),
-                    child: Text(
-                      'Выйти',
-                      style: textTheme.labelLarge?.copyWith(
-                        color: colorScheme.onError,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+              ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildUserInfoRow(
-    String label,
-    String value,
-    ColorScheme colorScheme,
-    TextTheme textTheme,
-  ) {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            flex: 2,
-            child: Text(
-              '$label:',
-              style: textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          SizedBox(width: 16),
-          Expanded(
-            flex: 3,
-            child: Text(
-              value,
-              style: textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurface,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  Future<void> _init() async {
+    // Проверяем mounted в начале
+    if (!mounted) return;
+    setState(() => _isLoading = true);
+    final mainNotifier = ref.read(mainViewModelProvider.notifier);
 
-  Future<void> _logout(BuildContext context, WidgetRef ref) async {
     try {
-      final authViewModel = ref.read(authViewModelProvider.notifier);
-      await authViewModel.logout();
+      await mainNotifier.init();
+      // После асинхронной операции проверяем mounted
+      if (!mounted) return;
+      final mainState = ref.read(mainViewModelProvider);
+      homes = mainState.homes;
+      if (homes.isNotEmpty) {
+        currentHome = mainState.selectedHome ?? homes.first;
+      }
 
-      // Навигация на экран авторизации
+      devices = mainState.devices;
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Ошибка при выходе: $e',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onError,
-                ),
-          ),
-          backgroundColor: Theme.of(context).colorScheme.error,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        ),
-      );
+      if (mounted) {
+        _showError('Ошибка: $e');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onError,
+              ),
+        ),
+        backgroundColor: Theme.of(context).colorScheme.error,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+    );
   }
 }

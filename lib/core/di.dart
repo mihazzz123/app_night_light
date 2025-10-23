@@ -15,7 +15,9 @@ import '../../domain/usecases/login_user.dart';
 import '../../domain/usecases/logout_user.dart';
 import '../../domain/usecases/register_user.dart';
 import '../../domain/entities/auth_state.dart';
+import '../../domain/entities/main_state.dart';
 import '../../presentation/viewmodels/auth_viewmodel.dart';
+import '../../presentation/viewmodels/main_viewmodel.dart';
 import '../core/config/app_config.dart';
 import '../core/network/api_client.dart';
 import '../core/utils/token_storage.dart';
@@ -118,4 +120,9 @@ final authViewModelProvider = StateNotifierProvider<AuthViewModel, AuthState>(
     registerUser: ref.read(registerUserProvider),
     userRepository: ref.read(userRepositoryProvider),
   ),
+);
+
+// Провайдер
+final mainViewModelProvider = StateNotifierProvider<MainViewModel, MainState>(
+  (ref) => MainViewModel(),
 );
