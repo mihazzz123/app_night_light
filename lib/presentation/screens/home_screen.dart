@@ -1,4 +1,6 @@
 import 'package:app_night_light/core/di.dart';
+import '../screens/device_detail.dart';
+import '../widgets/device_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/user_entity.dart';
@@ -18,6 +20,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Home? currentHome;
   bool _isLoading = true;
   List<Home> homes = [];
+  List<Room> rooms = [];
   List<Device> devices = [];
 
   // Список экранов для каждой вкладки
@@ -55,7 +58,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       appBar: _appPanel(),
       bottomNavigationBar: _navPanel(colorScheme),
       body: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(16),
         child: _isLoading
             ? SizedBox(
                 height: 20,
@@ -65,24 +68,74 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   color: colorScheme.onPrimary,
                 ),
               )
-            : GridView.count(
-                crossAxisCount: 2,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                children: [
-                  Text(
-                    'Температура 22,5C ',
-                    style: textTheme.bodyMedium?.copyWith(
-                      fontSize: 12,
+            : DefaultTabController(
+                length: rooms.length + 1,
+                child: Column(
+                  children: [
+                    TabBar(
+                      isScrollable: true,
+                      tabAlignment: TabAlignment.start,
+                      tabs: [
+                        const Tab(text: 'Все'),
+                        ...rooms.map((room) => Tab(text: room.name)).toList(),
+                      ],
                     ),
-                  ),
-                  Text(
-                    'Влажность 55.3%',
-                    style: textTheme.bodyMedium?.copyWith(
-                      fontSize: 12,
+                    Expanded(
+                      child: TabBarView(
+                        children: [
+                          // Все устройства
+                          GridView.count(
+                            crossAxisCount: 3,
+                            crossAxisSpacing: 4,
+                            mainAxisSpacing: 2,
+                            padding: const EdgeInsets.all(12),
+                            children: devices.map((device) {
+                              return DeviceCard(
+                                device: device,
+                                onToggle: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                          DeviceDetailScreen(device: device),
+                                    ),
+                                  );
+                                },
+                              );
+                            }).toList(),
+                          ),
+                          // Устройства по комнатам
+                          ...rooms.map((room) {
+                            final roomDevices = devices
+                                .where((d) => d.room == room.id)
+                                .toList();
+
+                            return GridView.count(
+                              crossAxisCount: 3,
+                              crossAxisSpacing: 4,
+                              mainAxisSpacing: 2,
+                              padding: const EdgeInsets.all(12),
+                              children: roomDevices.map((device) {
+                                return DeviceCard(
+                                  device: device,
+                                  onToggle: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            DeviceDetailScreen(device: device),
+                                      ),
+                                    );
+                                  },
+                                );
+                              }).toList(),
+                            );
+                          }).toList(),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
       ),
     );
@@ -163,6 +216,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         currentHome = mainState.selectedHome ?? homes.first;
       }
 
+      rooms = mainState.rooms;
       devices = mainState.devices;
     } catch (e) {
       if (mounted) {

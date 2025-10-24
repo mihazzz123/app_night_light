@@ -5,7 +5,8 @@ import '../../domain/entities/main_state.dart';
 // ViewModel
 class MainViewModel extends StateNotifier<MainState> {
   MainViewModel()
-      : super(const MainState(homes: [], selectedHome: null, devices: []));
+      : super(const MainState(
+            homes: [], selectedHome: null, rooms: [], devices: []));
 
   Future<void> init() async {
     // Загружаем список домов из локального хранилища
@@ -16,6 +17,7 @@ class MainViewModel extends StateNotifier<MainState> {
 
     if (selected != null) {
       await loadDevicesForHome(selected.id);
+      await loadRoomsForHome(selected.id);
     }
   }
 
@@ -40,6 +42,26 @@ class MainViewModel extends StateNotifier<MainState> {
     state = state.copyWith(isLoading: false);
   }
 
+  Future<void> loadRoomsForHome(String homeId) async {
+    state = state.copyWith(isLoading: true);
+
+    final localRooms = await _loadRoomsFromLocal(homeId);
+    state = state.copyWith(rooms: localRooms);
+
+    // 2. Обновление с сервера
+    try {
+      final remoteRooms = await _loadRoomsFromRemote(homeId);
+      state = state.copyWith(rooms: remoteRooms);
+    } catch (e) {
+      // логируем ошибку, но не ломаем UI
+      if (kDebugMode) {
+        print('Ошибка загрузки комнат: $e');
+      }
+    }
+
+    state = state.copyWith(isLoading: false);
+  }
+
   void selectHome(Home home) {
     state = state.copyWith(selectedHome: home);
     loadDevicesForHome(home.id);
@@ -53,19 +75,60 @@ class MainViewModel extends StateNotifier<MainState> {
     ];
   }
 
+  Future<List<Room>> _loadRoomsFromLocal(String homeId) async {
+    return [
+      const Room(id: 'room', name: 'Гостиная'),
+      const Room(id: 'room2', name: 'Кухня'),
+    ];
+  }
+
   Future<List<Device>> _loadDevicesFromLocal(String homeId) async {
     return [
-      Device(id: '1', name: 'Thermostat', isOnline: true),
-      Device(id: '2', name: 'Light', isOnline: false),
+      Device(
+          id: '1',
+          name: 'Thermostat',
+          isOnline: true,
+          isLocalOnline: true,
+          room: 'room1'),
+      Device(
+          id: '2',
+          name: 'Light',
+          isOnline: false,
+          isLocalOnline: true,
+          room: 'room1'),
     ];
   }
 
   Future<List<Device>> _loadDevicesFromRemote(String homeId) async {
     await Future.delayed(const Duration(seconds: 1)); // имитация запроса
     return [
-      Device(id: '1', name: 'Thermostat', isOnline: true),
-      Device(id: '2', name: 'Light', isOnline: true),
-      Device(id: '3', name: 'Camera', isOnline: false),
+      Device(
+          id: '1',
+          name: 'Thermostat',
+          isOnline: true,
+          isLocalOnline: true,
+          room: 'room1'),
+      Device(
+          id: '2',
+          name: 'Light',
+          isOnline: true,
+          isLocalOnline: true,
+          room: 'room1'),
+      Device(
+          id: '3',
+          name: 'Camera',
+          isOnline: false,
+          isLocalOnline: true,
+          room: 'room3'),
+    ];
+  }
+
+  Future<List<Room>> _loadRoomsFromRemote(String homeId) async {
+    await Future.delayed(const Duration(seconds: 1)); // имитация запроса
+    return [
+      const Room(id: 'room1', name: 'Гостиная'),
+      const Room(id: 'room2', name: 'Кухня'),
+      const Room(id: 'room3', name: 'Спальня'),
     ];
   }
 }
